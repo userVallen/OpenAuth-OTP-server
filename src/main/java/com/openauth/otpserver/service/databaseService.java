@@ -70,4 +70,33 @@ public class databaseService {
         }
         return null;
     }
+
+    public void removeEntry(String username) {
+        lock.lock(); // Ensure thread safety
+        List<String> remainingEntries = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(CSV_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] values = line.split(",");
+                if (!values[0].equals(username)) {
+                    remainingEntries.add(line); // Keep entries not matching the username
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Rewrite CSV file without the removed entry
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(CSV_FILE))) {
+            for (String entry : remainingEntries) {
+                writer.write(entry);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
 }

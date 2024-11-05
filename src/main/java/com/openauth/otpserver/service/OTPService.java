@@ -1,5 +1,6 @@
 package com.openauth.otpserver.service;
 
+import com.openauth.otpserver.model.OTP;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,16 +15,21 @@ public class OTPService {
     private final databaseService databaseService = new databaseService();
 
     // Generate a 6-digit numeric OTP
-    public String generateOTP() {
+    public String generateNumberOTP() {
         int otp = random.nextInt(999999);
         return String.format("%06d", otp);
+    }
+
+    public OTP generateOTP(String username, String otp) {
+        long timestamp = Instant.now().getEpochSecond();
+        return new OTP(username, otp, timestamp);
     }
 
     public String generateKey(String username, String otp) {
         return username + serverKey + otp;
     }
 
-    // Hash the OTP using BCrypt
+    // Hash the OTP.java using BCrypt
     public String hashOTP(String key) {
         String time = String.valueOf(Instant.now().getEpochSecond() / 30); // 30-second time window
         String input = key + time;
@@ -31,10 +37,13 @@ public class OTPService {
     }
 
     // Verify the OTP by comparing the hashed versions
-    public boolean verifyOTP(String enteredUsername, String enteredOTP) {
-        String time = String.valueOf(Instant.now().getEpochSecond() / 30); // 30-second time window
-        String input = enteredUsername + serverKey + enteredOTP + time;
-        String storedHash = databaseService.readCSV(enteredUsername);
-        return BCrypt.checkpw(input, storedHash);
+    public boolean verifyOTP(String enteredOTP, OTP inputOTP) {
+        if (!inputOTP.getOtp().equals(enteredOTP)) {
+            return false;
+        }
+
+        // Check if the OTP is still valid (30 seconds)
+        long currentTime = Instant.now().getEpochSecond();
+        return (currentTime - inputOTP.getTimestamp() <= 30);
     }
 }
