@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class databaseService {
+public class DatabaseService {
     private static final String CSV_FILE = "output.csv";
     private static final Lock lock = new ReentrantLock();
 

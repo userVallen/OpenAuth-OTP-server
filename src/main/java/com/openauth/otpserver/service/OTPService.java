@@ -6,13 +6,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.security.SecureRandom;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class OTPService {
     @Value("${otp.server.key}")
     private String serverKey;
     private static final SecureRandom random = new SecureRandom();
-    private final databaseService databaseService = new databaseService();
+    private final ConcurrentHashMap<String, OTP> OTPStore = new ConcurrentHashMap<>(); // Thread-safe map to store OTPs
 
     // Generate a 6-digit numeric OTP
     public String generateNumberOTP() {
@@ -31,7 +32,7 @@ public class OTPService {
 
     // Hash the OTP.java using BCrypt
     public String hashOTP(String key) {
-        String time = String.valueOf(Instant.now().getEpochSecond() / 30); // 30-second time window
+        String time = String.valueOf(Instant.now().getEpochSecond());
         String input = key + time;
         return BCrypt.hashpw(input, BCrypt.gensalt());
     }
@@ -45,5 +46,17 @@ public class OTPService {
         // Check if the OTP is still valid (30 seconds)
         long currentTime = Instant.now().getEpochSecond();
         return (currentTime - inputOTP.getTimestamp() <= 30);
+    }
+
+    public void updateOTP(String username, OTP otp) {
+        OTPStore.put(username, otp);
+    }
+
+    public void removeOTP(String username) {
+        OTPStore.remove(username);
+    }
+
+    public OTP getOTP(String username) {
+        return OTPStore.get(username);
     }
 }

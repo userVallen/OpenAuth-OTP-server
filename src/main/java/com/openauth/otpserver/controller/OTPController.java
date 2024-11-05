@@ -2,33 +2,31 @@ package com.openauth.otpserver.controller;
 
 import com.openauth.otpserver.model.OTP;
 import com.openauth.otpserver.service.OTPService;
-import com.openauth.otpserver.service.databaseService;
+import com.openauth.otpserver.service.DatabaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/otp")
 public class OTPController {
     @Autowired
-    private OTPService OTPService;
-    private final databaseService databaseService = new databaseService();
-    private final ConcurrentHashMap<String, OTP> OTPStore = new ConcurrentHashMap<>(); // Thread-safe map to store OTPs
+    private final OTPService OtpService = new OTPService();
+    private final DatabaseService databaseService = new DatabaseService();
 
     @PostMapping("/generate")
     public ResponseEntity<String> generateOTP(@RequestParam String username) {
         System.out.println("Generating OTP for: " + username);
 
-        String numberOTP = OTPService.generateNumberOTP();
-        OTP otp = OTPService.generateOTP(username, numberOTP);
-        OTPStore.put(username, otp); // Store the OTP for the username
+        String numberOTP = OtpService.generateNumberOTP();
+        OTP otp = OtpService.generateOTP(username, numberOTP);
+        OtpService.updateOTP(username, otp);
         System.out.println("Number OTP: " + numberOTP);
 
-        String key = OTPService.generateKey(username, numberOTP);
+        String key = OtpService.generateKey(username, numberOTP);
         System.out.println("Hash OTP  : " + key);
 
-        String hashedOTP = OTPService.hashOTP(key);
+        String hashedOTP = OtpService.hashOTP(key);
         System.out.println("Hashed OTP: " + hashedOTP);
 
         databaseService.writeCSV(username, hashedOTP);
@@ -36,14 +34,14 @@ public class OTPController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyOTP(@RequestParam String username, @RequestParam String otpCode) {
-        OTP otp = OTPStore.get(username);
+    public ResponseEntity<String> verifyOTP(@RequestParam String username, @RequestParam String clientOtp) {
+        OTP serverOtp = OtpService.getOTP(username);
         String enteredHash = databaseService.readCSV(username);
-        if(enteredHash != null && otp != null) {
-            boolean isValid = OTPService.verifyOTP(otpCode, otp);
+        if(enteredHash != null && serverOtp != null) {
+            boolean isValid = OtpService.verifyOTP(clientOtp, serverOtp);
             if (isValid) {
                 System.out.println("OTP verified successfully.");
-                OTPStore.remove(username);
+                OtpService.removeOTP(username);
                 databaseService.removeEntry(username);
                 return ResponseEntity.ok("OTP verified successfully");
             } else {
