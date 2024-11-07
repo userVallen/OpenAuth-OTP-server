@@ -11,26 +11,24 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/otp")
 public class OTPController {
     @Autowired
-    private final OTPService OtpService = new OTPService();
+    private final OTPService otpService = new OTPService();
     private final DatabaseService databaseService = new DatabaseService();
 
     @PostMapping("/generate")
     public ResponseEntity<String> generateOTP(@RequestParam String username) {
         System.out.println("Generating OTP for: " + username);
 
-        String key = OtpService.generateKey(username);
+        String key = otpService.generateKey(username);
         System.out.println("Key       : " + key);
 
-        String hashedOTP = OtpService.hashOTP(key);
+        String hashedOTP = otpService.hashOTP(key);
         System.out.println("Hashed OTP: " + hashedOTP);
 
-        String shortenedOTP = OtpService.shortenOTP(hashedOTP);
+        String shortenedOTP = otpService.shortenOTP(hashedOTP);
         System.out.println("Shortened OTP: " + shortenedOTP);
 
-//        String numberOTP = OtpService.generateNumberOTP();
-        OTP otp = OtpService.generateOTP(username, shortenedOTP);
-        OtpService.updateOTP(username, otp);
-//        System.out.println("Number OTP: " + shortenedOTP);
+        OTP otp = otpService.generateOTP(username, shortenedOTP);
+        otpService.updateOTP(username, otp);
 
         databaseService.writeCSV(username, hashedOTP);
         return ResponseEntity.ok(shortenedOTP);
@@ -38,13 +36,13 @@ public class OTPController {
 
     @PostMapping("/verify")
     public ResponseEntity<String> verifyOTP(@RequestParam String username, @RequestParam String clientOtp) {
-        OTP serverOtp = OtpService.getOTP(username);
+        OTP serverOtp = otpService.getOTP(username);
         String enteredHash = databaseService.readCSV(username);
         if(enteredHash != null && serverOtp != null) {
-            boolean isValid = OtpService.verifyOTP(clientOtp, serverOtp);
+            boolean isValid = otpService.verifyOTP(clientOtp, serverOtp);
             if (isValid) {
                 System.out.println("OTP verified successfully.");
-                OtpService.removeOTP(username);
+                otpService.removeOTP(username);
                 databaseService.removeEntry(username);
                 return ResponseEntity.ok("OTP verified successfully");
             } else {

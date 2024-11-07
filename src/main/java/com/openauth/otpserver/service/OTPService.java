@@ -15,12 +15,6 @@ public class OTPService {
     private static final SecureRandom random = new SecureRandom();
     private final ConcurrentHashMap<String, OTP> OTPStore = new ConcurrentHashMap<>(); // Thread-safe map to store OTPs
 
-//    // Generate a 6-digit numeric OTP
-//    public String generateNumberOTP() {
-//        int otp = random.nextInt(999999);
-//        return String.format("%06d", otp);
-//    }
-
     public String generateKey(String username) {
         String timeComponent = String.valueOf(Instant.now().getEpochSecond());
         return username + serverKey + timeComponent;
@@ -37,7 +31,12 @@ public class OTPService {
     }
 
     public String shortenOTP (String hashOTP) {
-        return hashOTP.substring(hashOTP.length() - 6);
+        String substring = hashOTP.substring(hashOTP.length() - 4);
+        int numericValue = substring.hashCode(); // Generate an integer from the substring
+
+        int otpNumber = 100000 + Math.abs(numericValue) % 900000; // Map to a 6-digit range (100000-999999)
+
+        return String.valueOf(otpNumber);
     }
 
     // Verify the OTP by comparing the hashed versions
