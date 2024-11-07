@@ -18,19 +18,22 @@ public class OTPController {
     public ResponseEntity<String> generateOTP(@RequestParam String username) {
         System.out.println("Generating OTP for: " + username);
 
-        String numberOTP = OtpService.generateNumberOTP();
-        OTP otp = OtpService.generateOTP(username, numberOTP);
-        OtpService.updateOTP(username, otp);
-        System.out.println("Number OTP: " + numberOTP);
-
-        String key = OtpService.generateKey(username, numberOTP);
-        System.out.println("Hash OTP  : " + key);
+        String key = OtpService.generateKey(username);
+        System.out.println("Key       : " + key);
 
         String hashedOTP = OtpService.hashOTP(key);
         System.out.println("Hashed OTP: " + hashedOTP);
 
+        String shortenedOTP = OtpService.shortenOTP(hashedOTP);
+        System.out.println("Shortened OTP: " + shortenedOTP);
+
+//        String numberOTP = OtpService.generateNumberOTP();
+        OTP otp = OtpService.generateOTP(username, shortenedOTP);
+        OtpService.updateOTP(username, otp);
+//        System.out.println("Number OTP: " + shortenedOTP);
+
         databaseService.writeCSV(username, hashedOTP);
-        return ResponseEntity.ok(numberOTP);
+        return ResponseEntity.ok(shortenedOTP);
     }
 
     @PostMapping("/verify")

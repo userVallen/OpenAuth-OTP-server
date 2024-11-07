@@ -15,26 +15,29 @@ public class OTPService {
     private static final SecureRandom random = new SecureRandom();
     private final ConcurrentHashMap<String, OTP> OTPStore = new ConcurrentHashMap<>(); // Thread-safe map to store OTPs
 
-    // Generate a 6-digit numeric OTP
-    public String generateNumberOTP() {
-        int otp = random.nextInt(999999);
-        return String.format("%06d", otp);
+//    // Generate a 6-digit numeric OTP
+//    public String generateNumberOTP() {
+//        int otp = random.nextInt(999999);
+//        return String.format("%06d", otp);
+//    }
+
+    public String generateKey(String username) {
+        String timeComponent = String.valueOf(Instant.now().getEpochSecond());
+        return username + serverKey + timeComponent;
     }
 
-    public OTP generateOTP(String username, String otp) {
+    public OTP generateOTP(String username, String shortenedOTP) {
         long timestamp = Instant.now().getEpochSecond();
-        return new OTP(username, otp, timestamp);
+        return new OTP(username, shortenedOTP, timestamp);
     }
 
-    public String generateKey(String username, String otp) {
-        return username + serverKey + otp;
-    }
-
-    // Hash the OTP.java using BCrypt
+    // Hash the OTP using BCrypt
     public String hashOTP(String key) {
-        String time = String.valueOf(Instant.now().getEpochSecond());
-        String input = key + time;
-        return BCrypt.hashpw(input, BCrypt.gensalt());
+        return BCrypt.hashpw(key, BCrypt.gensalt());
+    }
+
+    public String shortenOTP (String hashOTP) {
+        return hashOTP.substring(hashOTP.length() - 6);
     }
 
     // Verify the OTP by comparing the hashed versions
