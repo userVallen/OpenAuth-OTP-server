@@ -14,7 +14,7 @@ public class DatabaseService {
     private static final String CSV_FILE = "output.csv";
     private static final Lock lock = new ReentrantLock();
 
-    public void writeCSV(String username, String hash) {
+    public void setHash(String username, String hash) {
         lock.lock(); // Ensure thread safety
         List<String> lines = new ArrayList<>();
         boolean userFound = false;
@@ -55,7 +55,7 @@ public class DatabaseService {
         }
     }
 
-    public String readCSV(String username) {
+    public String getHash(String username) {
         String line;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(CSV_FILE))) {

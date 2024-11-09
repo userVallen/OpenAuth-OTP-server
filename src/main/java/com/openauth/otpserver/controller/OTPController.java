@@ -30,15 +30,15 @@ public class OTPController {
         OTP otp = otpService.generateOTP(username, shortenedOTP);
         otpService.updateOTP(username, otp);
 
-        databaseService.writeCSV(username, hashedOTP);
+        databaseService.setHash(username, hashedOTP);
         return ResponseEntity.ok(shortenedOTP);
     }
 
     @PostMapping("/verify")
     public ResponseEntity<String> verifyOTP(@RequestParam String username, @RequestParam String clientOtp) {
         OTP serverOtp = otpService.getOTP(username);
-        String enteredHash = databaseService.readCSV(username);
-        if(enteredHash != null && serverOtp != null) {
+        String serverHash = databaseService.getHash(username);
+        if(serverHash != null && serverOtp != null) {
             boolean isValid = otpService.verifyOTP(clientOtp, serverOtp);
             if (isValid) {
                 System.out.println("OTP verified successfully.");
