@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(OTPController.class)
+@WebMvcTest(controllers = OTPController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
 class OTPControllerTest {
 
     @Autowired
@@ -53,7 +54,7 @@ class OTPControllerTest {
 
         Mockito.doNothing().when(databaseService).setHash(username, hashedOTP);
 
-        mockMvc.perform(post("/generate") // performs a mock HTTP POST request to the /generate endpoint
+        mockMvc.perform(post("/otp/generate") // performs a mock HTTP POST request to the /generate endpoint
                         .param("username", username) // use the parameter "username"
                         .contentType(MediaType.APPLICATION_JSON)) // JSON request
                 .andExpect(status().isOk()) // expects 200 OK as a response
@@ -72,7 +73,7 @@ class OTPControllerTest {
         Mockito.doNothing().when(otpService).removeOTP(username);
         Mockito.doNothing().when(databaseService).removeEntry(username);
 
-        mockMvc.perform(post("/verify")
+        mockMvc.perform(post("/otp/verify")
                         .param("username", username)
                         .param("clientOtp", shortenedOTP)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -88,7 +89,7 @@ class OTPControllerTest {
         when(databaseService.getHash(username)).thenReturn(hashedOTP);
         when(otpService.verifyOTP("wrongOTP", otp)).thenReturn(false);
 
-        mockMvc.perform(post("/verify")
+        mockMvc.perform(post("/otp/verify")
                         .param("username", username)
                         .param("clientOtp", "wrongOTP")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -102,7 +103,7 @@ class OTPControllerTest {
         when(otpService.getOTP(username)).thenReturn(null);
         when(databaseService.getHash(username)).thenReturn(null);
 
-        mockMvc.perform(post("/verify")
+        mockMvc.perform(post("/otp/verify")
                         .param("username", username)
                         .param("clientOtp", shortenedOTP)
                         .contentType(MediaType.APPLICATION_JSON))

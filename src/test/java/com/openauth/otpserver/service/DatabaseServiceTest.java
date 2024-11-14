@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class DatabaseServiceTest {
 
     private DatabaseService databaseService;
-    private static final String TEMP_CSV_FILE = "temp_output.csv";
+    private static String TEMP_CSV_FILE = "temp_output.csv";
 
     @BeforeEach
     void setUp() {

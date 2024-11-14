@@ -11,7 +11,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DatabaseService {
-    private static final String CSV_FILE = "output.csv";
+    private static String CSV_FILE = "output.csv";
     private static final Lock lock = new ReentrantLock();
 
     public void setHash(String username, String hash) {
