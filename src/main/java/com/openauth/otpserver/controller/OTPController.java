@@ -3,19 +3,25 @@ package com.openauth.otpserver.controller;
 import com.openauth.otpserver.model.OTP;
 import com.openauth.otpserver.service.OTPService;
 import com.openauth.otpserver.service.DatabaseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/otp")
+@Tag(name = "OTP Controller", description = "Operations for generating and verifying OTPs")
 public class OTPController {
     @Autowired
     private final OTPService otpService = new OTPService();
     private final DatabaseService databaseService = new DatabaseService();
 
     @PostMapping("/generate")
-    public ResponseEntity<String> generateOTP(@RequestParam String username) {
+    public ResponseEntity<String> generateOTP(
+            @Parameter(description = "Username for which the OTP is to be generated", required = true)
+            @RequestParam String username) {
         System.out.println("Generating OTP for: " + username);
 
         String key = otpService.generateKey(username);
@@ -35,7 +41,12 @@ public class OTPController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyOTP(@RequestParam String username, @RequestParam String clientOtp) {
+    @Operation(summary = "Verify an OTP for a user", description = "Verifies an OTP for the given username.")
+    public ResponseEntity<String> verifyOTP(
+            @Parameter(description = "Username associated with the OTP to verify", required = true)
+            @RequestParam String username,
+            @Parameter(description = "OTP provided by the client for verification", required = true)
+            @RequestParam String clientOtp) {
         OTP serverOtp = otpService.getOTP(username);
         String serverHash = databaseService.getHash(username);
         if(serverHash != null && serverOtp != null) {

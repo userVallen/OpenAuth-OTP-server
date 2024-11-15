@@ -13,10 +13,19 @@ public class AuthConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/otp/generate", "/otp/verify").permitAll()
+                        .requestMatchers(
+                                "/otp/generate",
+                                "/otp/verify",
+                                "/test",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 );
         return http.build();
     }
 }
-
