@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.Instant;
+import java.util.Map;
 
 @SpringBootTest
 class OTPServiceTest {
@@ -66,14 +67,20 @@ class OTPServiceTest {
         OTP otp = otpService.generateOTP(username, shortenedOTP);
 
         // Test with a correct OTP
-        assertTrue(otpService.verifyOTP(shortenedOTP, otp));
+        Map<String, Object> response = otpService.verifyOTP(shortenedOTP, otp);
+        assertTrue((Boolean) response.get("valid"));
+        assertEquals("OTP verified successfully", response.get("message"));
 
         // Test with an incorrect OTP
-        assertFalse(otpService.verifyOTP("wrongOTP", otp));
+        response = otpService.verifyOTP("wrongOTP", otp);
+        assertTrue((Boolean) response.get("valid"));
+        assertEquals("Invalid OTP", response.get("message"));
 
         // Simulate an expired OTP (setting a timestamp older than 30 seconds)
         OTP expiredOTP = new OTP(username, shortenedOTP, Instant.now().getEpochSecond() - 31);
-        assertFalse(otpService.verifyOTP(shortenedOTP, expiredOTP));
+        response = otpService.verifyOTP(shortenedOTP, expiredOTP);
+        assertFalse((Boolean) response.get("valid"));
+        assertEquals("OTP has expired", response.get("message"));
     }
 
     @Test

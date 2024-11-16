@@ -13,10 +13,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Map;
+
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = OTPController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
 class OTPControllerTest {
@@ -58,7 +59,8 @@ class OTPControllerTest {
                         .param("username", username) // use the parameter "username"
                         .contentType(MediaType.APPLICATION_JSON)) // JSON request
                 .andExpect(status().isOk()) // expects 200 OK as a response
-                .andExpect(content().string(shortenedOTP)); // expects a shortenedOTP in the response body
+                .andExpect(jsonPath("$.message").value("OTP generated successfully"))
+                .andExpect(jsonPath("$.otp").value(shortenedOTP));
     }
 
     // simulate a successful OTP verification
@@ -67,7 +69,10 @@ class OTPControllerTest {
         OTP otp = new OTP(username, shortenedOTP, System.currentTimeMillis() / 1000L); // represent the OTP stored in DB
         when(otpService.getOTP(username)).thenReturn(otp);
         when(databaseService.getHash(username)).thenReturn(hashedOTP);
-        when(otpService.verifyOTP(shortenedOTP, otp)).thenReturn(true); // successful verification returns true
+        when(otpService.verifyOTP(shortenedOTP, otp)).thenReturn(Map.of(
+                "message", "OTP verified successfully",
+                "valid", true
+        ));
 
         // Mock successful verification and clean-up actions
         Mockito.doNothing().when(otpService).removeOTP(username);
@@ -78,7 +83,8 @@ class OTPControllerTest {
                         .param("clientOtp", shortenedOTP)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string("OTP verified successfully"));
+                .andExpect(jsonPath("$.message").value("OTP verified successfully"))
+                .andExpect(jsonPath("$.valid").value(true));
     }
 
     // simulate an invalid OTP submission
@@ -87,14 +93,18 @@ class OTPControllerTest {
         OTP otp = new OTP(username, shortenedOTP, System.currentTimeMillis() / 1000L);
         when(otpService.getOTP(username)).thenReturn(otp);
         when(databaseService.getHash(username)).thenReturn(hashedOTP);
-        when(otpService.verifyOTP("wrongOTP", otp)).thenReturn(false);
+        when(otpService.verifyOTP("wrongOTP", otp)).thenReturn(Map.of(
+                "message", "Invalid OTP",
+                "valid", false
+        ));
 
         mockMvc.perform(post("/otp/verify")
                         .param("username", username)
                         .param("clientOtp", "wrongOTP")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
-                .andExpect(content().string("OTP verification failed"));
+                .andExpect(jsonPath("$.message").value("Invalid OTP"))
+                .andExpect(jsonPath("$.valid").value(false));
     }
 
     // simulate an invalid username submission
@@ -108,6 +118,7 @@ class OTPControllerTest {
                         .param("clientOtp", shortenedOTP)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Username not found"));
+                .andExpect(jsonPath("$.message").value("Username not found"))
+                .andExpect(jsonPath("$.valid").value(false));
     }
 }

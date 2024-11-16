@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.security.SecureRandom;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -40,14 +43,27 @@ public class OTPService {
     }
 
     // Verify the OTP by comparing the hashed versions
-    public boolean verifyOTP(String enteredOTP, OTP inputOTP) {
-        if (!inputOTP.getOtp().equals(enteredOTP)) {
-            return false;
-        }
+    public Map<String, Object> verifyOTP(String enteredOTP, OTP inputOTP) {
+        Map<String, Object> response = new LinkedHashMap<>();
 
         // Check if the OTP is still valid (30 seconds)
         long currentTime = Instant.now().getEpochSecond();
-        return (currentTime - inputOTP.getTimestamp() <= 30);
+        boolean isValid = (currentTime - inputOTP.getTimestamp() <= 30);
+
+        if (!inputOTP.getOtp().equals(enteredOTP)) {
+            response.put("message", "Invalid OTP");
+        }
+        else {
+            response.put("message", "OTP verified successfully");
+        }
+
+        if (isValid) {
+            response.put("valid", true);
+        } else {
+            response.put("message", "OTP has expired");
+            response.put("valid", false);
+        }
+        return response;
     }
 
     public void updateOTP(String username, OTP otp) {
