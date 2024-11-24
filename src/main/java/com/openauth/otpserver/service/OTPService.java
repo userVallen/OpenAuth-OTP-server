@@ -1,80 +1,68 @@
 package com.openauth.otpserver.service;
 
-import com.openauth.otpserver.model.OTP;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
+import java.util.Base64;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class OTPService {
     @Value("${otp.server.key}")
     private String serverKey;
-    private static final SecureRandom random = new SecureRandom();
-    private final ConcurrentHashMap<String, OTP> OTPStore = new ConcurrentHashMap<>(); // Thread-safe map to store OTPs
 
     public String generateKey(String username) {
-        String timeComponent = String.valueOf(Instant.now().getEpochSecond());
-        return username + serverKey + timeComponent;
+        return username + serverKey;
     }
 
-    public OTP generateOTP(String username, String shortenedOTP) {
-        long timestamp = Instant.now().getEpochSecond();
-        return new OTP(username, shortenedOTP, timestamp);
+    public String generateOTP(String key) throws NoSuchAlgorithmException {
+        // Get the current time block
+        long currentTimeBlock = System.currentTimeMillis() / 60000;
+
+        // Combine key and time block
+        String combinedKey = key + currentTimeBlock;
+
+        // Use SHA-256 to create a hash of the key
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hash = md.digest(combinedKey.getBytes());
+
+        // Convert the first 4 bytes of the hash to an integer
+        ByteBuffer buffer = ByteBuffer.wrap(hash);
+        int hashInt = buffer.getInt();
+
+        // Get a 6-digit OTP by taking the absolute value and limiting to 6 digits
+        int otp = Math.abs(hashInt % 1_000_000);  // Modulo 1,000,000 to get a 6-digit number
+        return String.format("%06d", otp);  // Pad with leading zeros if needed
     }
 
-    // Hash the OTP using BCrypt
-    public String hashOTP(String key) {
+    // Hash the key using BCrypt
+    public String hashKey(String key) {
         return BCrypt.hashpw(key, BCrypt.gensalt());
     }
 
-    public String shortenOTP (String hashOTP) {
-        String substring = hashOTP.substring(hashOTP.length() - 4);
-        int numericValue = substring.hashCode(); // Generate an integer from the substring
-
-        int otpNumber = 100000 + Math.abs(numericValue) % 900000; // Map to a 6-digit range (100000-999999)
-
-        return String.valueOf(otpNumber);
-    }
-
     // Verify the OTP by comparing the hashed versions
-    public Map<String, Object> verifyOTP(String enteredOTP, OTP inputOTP) {
+    public Map<String, Object> verifyOTP(String clientOTP, String storedKey) throws NoSuchAlgorithmException {
         Map<String, Object> response = new LinkedHashMap<>();
 
-        // Check if the OTP is still valid (30 seconds)
-        long currentTime = Instant.now().getEpochSecond();
-        boolean isValid = (currentTime - inputOTP.getTimestamp() <= 30);
+        // Generate the OTP based on the stored key
+        String generatedOtp = generateOTP(storedKey);
 
-        if (!inputOTP.getOtp().equals(enteredOTP)) {
-            response.put("message", "Invalid OTP");
-        }
-        else {
-            response.put("message", "OTP verified successfully");
-        }
+        // Compare the generated OTP with the user-provided OTP
+        boolean isValid = generatedOtp.equals(clientOTP);
 
         if (isValid) {
-            response.put("valid", true);
+            response.put("message", "OTP verified successfully");
+            response.put("status", "Valid");
         } else {
-            response.put("message", "OTP has expired");
-            response.put("valid", false);
+            response.put("message", "Invalid OTP");
+            response.put("status", "Invalid");
         }
         return response;
-    }
-
-    public void updateOTP(String username, OTP otp) {
-        OTPStore.put(username, otp);
-    }
-
-    public void removeOTP(String username) {
-        OTPStore.remove(username);
-    }
-
-    public OTP getOTP(String username) {
-        return OTPStore.get(username);
     }
 }

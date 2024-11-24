@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,27 +25,25 @@ public class OTPController {
     @PostMapping("/generate")
     public ResponseEntity<Map<String, String>> generateOTP(
             @Parameter(description = "Username for which the OTP is to be generated", required = true)
-            @RequestParam String username) {
+            @RequestParam String username) throws NoSuchAlgorithmException {
         System.out.println("Generating OTP for: " + username);
 
         String key = otpService.generateKey(username);
         System.out.println("Key       : " + key);
 
-        String hashedOTP = otpService.hashOTP(key);
-        System.out.println("Hashed OTP: " + hashedOTP);
+        String hashedKey = otpService.hashKey(key);
+        System.out.println("Hashed Key: " + hashedKey);
 
-        String shortenedOTP = otpService.shortenOTP(hashedOTP);
-        System.out.println("Shortened OTP: " + shortenedOTP);
+        String otp = otpService.generateOTP(hashedKey);
 
-        OTP otp = otpService.generateOTP(username, shortenedOTP);
-        otpService.updateOTP(username, otp);
-
-        databaseService.setHash(username, hashedOTP);
+        // TODO: Change setHash to storeKey
+        databaseService.setHash(username, hashedKey);
 
         // Create response body with message and OTP
         Map<String, String> response = new LinkedHashMap<>();
         response.put("message", "OTP generated successfully");
-        response.put("otp", shortenedOTP);
+        response.put("hashedKey", hashedKey);
+        response.put("otp", otp);
 
         return ResponseEntity.ok(response);
     }
@@ -55,38 +54,25 @@ public class OTPController {
             @Parameter(description = "Username associated with the OTP to verify", required = true)
             @RequestParam String username,
             @Parameter(description = "OTP provided by the client for verification", required = true)
-            @RequestParam String clientOtp) {
-        OTP serverOtp = otpService.getOTP(username);
-        String serverHash = databaseService.getHash(username);
-
+            @RequestParam String clientOtp) throws NoSuchAlgorithmException {
         Map<String, Object> response = new LinkedHashMap<>();
 
-        if (serverHash != null && serverOtp != null) {
-            response = otpService.verifyOTP(clientOtp, serverOtp);
-            boolean isValid = (Boolean) response.get("valid");
-            String message = (String) response.get("message");
+        // Obtain the stored key and verify client's OTP
+        String storedKey = databaseService.getHash(username);
+        System.out.println("storedKey is: " + storedKey);
+        response = otpService.verifyOTP(clientOtp, storedKey);
 
-            if (isValid && "OTP verified successfully".equals(message)) {
-                System.out.println("OTP verified successfully.");
-                otpService.removeOTP(username);
-                databaseService.removeEntry(username);
-                return ResponseEntity.ok(response); // Success response
-            }
-            // Handle case where OTP has expired
-            else if ("OTP has expired".equals(message)) {
-                System.out.println("OTP has expired.");
-                return ResponseEntity.status(410).body(response); // HTTP 410 Gone for expired OTP
-            }
-            // Handle invalid OTP case
-            else if ("Invalid OTP".equals(message)) {
-                System.out.println("Invalid OTP.");
-                return ResponseEntity.status(401).body(response); // Unauthorized response
-            }
-        } else {
-            response.put("message", "Username not found");
-            response.put("valid", false);
-            return ResponseEntity.status(404).body(response); // Not Found
+        if (storedKey == null) {
+            response.put("message", "User not found");
+            return ResponseEntity.status(404).body(response);
         }
-        return null;
+
+        String isValid = (String) response.get("status");
+        System.out.println("Status is: " + isValid);
+        if (isValid.equals("Valid")) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(401).body(response);
+        }
     }
 }
