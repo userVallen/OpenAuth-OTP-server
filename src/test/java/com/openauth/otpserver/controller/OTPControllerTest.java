@@ -50,7 +50,7 @@
 //
 //        // Mock OTP generation and storage
 //        OTP otp = new OTP(username, shortenedOTP, System.currentTimeMillis() / 1000L);
-//        when(otpService.generateOTP(username, shortenedOTP)).thenReturn(otp); // generateOTP() returns otp
+//        when(otpService.signup(username, shortenedOTP)).thenReturn(otp); // signup() returns otp
 //        Mockito.doNothing().when(otpService).updateOTP(username, otp);
 //
 //        Mockito.doNothing().when(databaseService).setHash(username, hashedOTP);

@@ -38,7 +38,7 @@
 //    @Test
 //    void testGenerateOTP() {
 //        String shortenedOTP = "123456";
-//        OTP otp = otpService.generateOTP(username, shortenedOTP);
+//        OTP otp = otpService.signup(username, shortenedOTP);
 //        assertNotNull(otp);
 //        assertEquals(username, otp.getUsername());
 //        assertEquals(shortenedOTP, otp.getOtp());
@@ -64,7 +64,7 @@
 //    @Test
 //    void testVerifyOTP() {
 //        String shortenedOTP = "123456";
-//        OTP otp = otpService.generateOTP(username, shortenedOTP);
+//        OTP otp = otpService.signup(username, shortenedOTP);
 //
 //        // Test with a correct OTP
 //        Map<String, Object> response = otpService.verifyOTP(shortenedOTP, otp);
@@ -85,7 +85,7 @@
 //
 //    @Test
 //    void testUpdateAndGetOTP() {
-//        OTP otp = otpService.generateOTP(username, "123456");
+//        OTP otp = otpService.signup(username, "123456");
 //        otpService.updateOTP(username, otp);
 //
 //        OTP retrievedOTP = otpService.getOTP(username);
@@ -95,7 +95,7 @@
 //
 //    @Test
 //    void testRemoveOTP() {
-//        OTP otp = otpService.generateOTP(username, "123456");
+//        OTP otp = otpService.signup(username, "123456");
 //        otpService.updateOTP(username, otp);
 //
 //        otpService.removeOTP(username);

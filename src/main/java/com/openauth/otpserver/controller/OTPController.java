@@ -1,6 +1,5 @@
 package com.openauth.otpserver.controller;
 
-import com.openauth.otpserver.model.OTP;
 import com.openauth.otpserver.service.OTPService;
 import com.openauth.otpserver.service.DatabaseService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +22,7 @@ public class OTPController {
     private final DatabaseService databaseService = new DatabaseService();
 
     @PostMapping("/signup")
-    public ResponseEntity<Map<String, String>> generateOTP(
+    public ResponseEntity<Map<String, String>> signup(
             @Parameter(description = "Username for which the OTP is to be generated", required = true)
             @RequestParam String username) throws NoSuchAlgorithmException {
         System.out.println("Generating OTP for: " + username);

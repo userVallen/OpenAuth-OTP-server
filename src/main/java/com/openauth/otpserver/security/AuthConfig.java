@@ -14,8 +14,8 @@ public class AuthConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
-                                "/otp/generate",
-                                "/otp/verify",
+                                "/otp/signup",
+                                "/otp/login",
                                 "/test",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
