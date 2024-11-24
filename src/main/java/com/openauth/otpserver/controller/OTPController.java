@@ -22,7 +22,7 @@ public class OTPController {
     private final OTPService otpService = new OTPService();
     private final DatabaseService databaseService = new DatabaseService();
 
-    @PostMapping("/generate")
+    @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> generateOTP(
             @Parameter(description = "Username for which the OTP is to be generated", required = true)
             @RequestParam String username) throws NoSuchAlgorithmException {
@@ -48,7 +48,7 @@ public class OTPController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/verify")
+    @PostMapping("/login")
     @Operation(summary = "Verify an OTP for a user", description = "Verifies an OTP for the given username.")
     public ResponseEntity<Map<String, Object>> verifyOTP(
             @Parameter(description = "Username associated with the OTP to verify", required = true)
